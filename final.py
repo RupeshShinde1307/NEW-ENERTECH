@@ -36,7 +36,7 @@ def debug_print(message, level="info"):
             st.info(f"DEBUG: {message}")
 
 # Your OpenAI API key
-openai.api_key = "Open_ai_API_Key"
+openai.api_key = "YOUR_OPEN_AI_KEY"
 
 # YouTube videos data
 youtube_videos = [
@@ -297,10 +297,10 @@ def send_whatsapp_message(phone_number, message):
             clean_number = '91' + clean_number
             debug_print(f"Added country code: {clean_number}")
             
-        # Get current time and add 1 minute (pywhatkit requires future time)
+        # Get current time and add 2 minutes (pywhatkit requires future time)
         now = datetime.datetime.now()
         send_time_hour = now.hour
-        send_time_minute = now.minute + 1  # Send 1 minute from now
+        send_time_minute = now.minute + 2  # Send 2 minutes from now
         
         # Adjust if minute rolls over to next hour
         if send_time_minute >= 60:
@@ -347,7 +347,7 @@ def send_whatsapp_message(phone_number, message):
 
 def send_youtube_via_whatsapp(phone_number, video_urls, greeting_text, thanks_text):
     """
-    Sends YouTube links via WhatsApp using pywhatkit
+    Sends YouTube links via WhatsApp using the instant message function
     
     Parameters:
     - phone_number: Recipient's phone number
@@ -367,8 +367,8 @@ def send_youtube_via_whatsapp(phone_number, video_urls, greeting_text, thanks_te
             video_message += f"{video_url}\n"
         video_message += f"\n{thanks_text}"
         
-        # Send the message using our helper function
-        return send_whatsapp_message(phone_number, video_message)
+        # Send the message using our instant message function
+        return send_instant_message(phone_number, video_message)
     except Exception as e:
         debug_print(f"Error sending YouTube links: {e}", "error")
         debug_print(f"Trace: {traceback.format_exc()}", "error")
@@ -604,6 +604,27 @@ def safe_listen_for_speech(language_code="en", timeout=5):
         debug_print(f"Trace: {traceback.format_exc()}", "error")
         st.error("Speech recognition failed to initialize.")
         return None
+
+def format_phone_number_for_speech(phone_number):
+    """
+    Format a phone number for spoken output, pronouncing each digit individually
+    
+    Parameters:
+    - phone_number: Phone number to format
+    
+    Returns:
+    - Formatted phone number for speech
+    """
+    # Convert each digit to be pronounced individually
+    spoken_digits = []
+    for digit in phone_number:
+        if digit == '0':
+            spoken_digits.append('zero')
+        else:
+            spoken_digits.append(digit)
+    
+    # Join with spaces to ensure each digit is pronounced separately
+    return ' '.join(spoken_digits)
 
 def text_to_speech(text, language_code="en"):
     """
@@ -1443,12 +1464,14 @@ def main():
                                 st.session_state.temp_phone_number = clean_number
                                 st.success(f"I heard: +{clean_number}")
                                 
-                                # Add confirmation step
+                                # Add confirmation step - Format phone number for speech
+                                phone_for_speech = format_phone_number_for_speech(clean_number)
+                                
                                 confirm_text = {
-                                    "en": f"Is +{clean_number} your correct WhatsApp number?",
-                                    "hi": f"क्या +{clean_number} आपका सही व्हाट्सएप नंबर है?",
-                                    "mr": f"+{clean_number} हा तुमचा अचूक व्हॉट्सअॅप नंबर आहे का?"
-                                }.get(language_code, f"Is +{clean_number} your correct WhatsApp number?")
+                                    "en": f"Is +{phone_for_speech} your correct WhatsApp number?",
+                                    "hi": f"क्या +{phone_for_speech} आपका सही व्हाट्सएप नंबर है?",
+                                    "mr": f"+{phone_for_speech} हा तुमचा अचूक व्हॉट्सअॅप नंबर आहे का?"
+                                }.get(language_code, f"Is +{phone_for_speech} your correct WhatsApp number?")
                                 
                                 text_to_speech(confirm_text, language_code)
                                 
@@ -1507,11 +1530,14 @@ def main():
             try:
                 # Confirm phone number reception - only play once
                 if not st.session_state.greeting_played_step_2:
+                    # Format phone number for speech
+                    phone_for_speech = format_phone_number_for_speech(st.session_state.phone_number)
+                    
                     confirm_text = {
-                        "en": f"Thank you! I've noted your number +{st.session_state.phone_number}. Now, please tell me what issue you're facing with your EnerTech solar inverter.",
-                        "hi": f"धन्यवाद! मैंने आपका नंबर +{st.session_state.phone_number} नोट कर लिया है। अब, कृपया मुझे बताएं कि आपको अपने एनरटेक सोलर इनवर्टर के साथ किस समस्या का सामना करना पड़ रहा है।",
-                        "mr": f"धन्यवाद! मी तुमचा नंबर +{st.session_state.phone_number} नोंद केला आहे. आता, कृपया मला सांगा की तुम्हाला तुमच्या एनरटेक सोलर इन्व्हर्टरसह कोणत्या समस्येचा सामना करावा लागत आहे."
-                    }.get(language_code, f"Thank you! I've noted your number +{st.session_state.phone_number}. Now, please tell me what issue you're facing with your EnerTech solar inverter.")
+                        "en": f"Thank you! I've noted your number +{phone_for_speech}. Now, please tell me what issue you're facing with your EnerTech solar inverter.",
+                        "hi": f"धन्यवाद! मैंने आपका नंबर +{phone_for_speech} नोट कर लिया है। अब, कृपया मुझे बताएं कि आपको अपने एनरटेक सोलर इनवर्टर के साथ किस समस्या का सामना करना पड़ रहा है।",
+                        "mr": f"धन्यवाद! मी तुमचा नंबर +{phone_for_speech} नोंद केला आहे. आता, कृपया मला सांगा की तुम्हाला तुमच्या एनरटेक सोलर इन्व्हर्टरसह कोणत्या समस्येचा सामना करावा लागत आहे."
+                    }.get(language_code, f"Thank you! I've noted your number +{phone_for_speech}. Now, please tell me what issue you're facing with your EnerTech solar inverter.")
                     
                     text_to_speech(confirm_text, language_code)
                     st.session_state.greeting_played_step_2 = True
@@ -1693,28 +1719,53 @@ def main():
             # Show sending status
             with st.spinner("Sending videos to your WhatsApp..."):
                 st.info("I'll open WhatsApp Web to send the videos. You may need to click the send button if it doesn't send automatically.")
-                success = send_youtube_via_whatsapp(
-                    st.session_state.phone_number, 
-                    st.session_state.video_links,
-                    greeting_text,
-                    thanks_text
-                )
+                
+                # Use the instant message function directly instead of send_youtube_via_whatsapp
+                video_message = f"{greeting_text}\n\n"
+                for video_url in st.session_state.video_links:
+                    video_message += f"{video_url}\n"
+                video_message += f"\n{thanks_text}"
+                
+                success = send_instant_message(st.session_state.phone_number, video_message)
                 
                 if success:
                     st.success("WhatsApp message with videos has been prepared. If it didn't send automatically, please click the send button in the WhatsApp window.")
                 else:
-                    # Try alternative method
+                    # Try alternative method with longer wait
                     st.warning("Trying alternative method to send the videos...")
                     
-                    video_message = f"{greeting_text}\n\n"
-                    for video_url in st.session_state.video_links:
-                        video_message += f"{video_url}\n"
-                    video_message += f"\n{thanks_text}"
+                    # Get current time and add 3 minutes (longer buffer)
+                    now = datetime.datetime.now()
+                    send_time_hour = now.hour
+                    send_time_minute = now.minute + 3
                     
-                    if send_instant_message(st.session_state.phone_number, video_message):
-                        st.success("WhatsApp message with videos has been prepared using an alternative method. Please check the WhatsApp window and click send if needed.")
-                    else:
-                        st.error("Could not send videos to WhatsApp. Here are the links you can use:")
+                    # Adjust if minute rolls over to next hour
+                    if send_time_minute >= 60:
+                        send_time_minute %= 60
+                        send_time_hour += 1
+                    if send_time_hour >= 24:
+                        send_time_hour %= 24
+                        
+                    # Clean phone number
+                    clean_number = ''.join(filter(str.isdigit, st.session_state.phone_number))
+                    if not clean_number.startswith('91') and len(clean_number) < 12:
+                        clean_number = '91' + clean_number
+                    
+                    try:
+                        # Try with standard function but more wait time
+                        pwk.sendwhatmsg(
+                            f"+{clean_number}", 
+                            video_message, 
+                            send_time_hour, 
+                            send_time_minute,
+                            60,  # wait_time increased to 60 seconds
+                            True, 
+                            10   # close_time increased to 10 seconds
+                        )
+                        st.success("WhatsApp message with videos has been prepared with extended wait time. Please check the WhatsApp window.")
+                    except Exception as e:
+                        debug_print(f"Extended wait method failed: {e}", "error")
+                        st.error("Could not send videos to WhatsApp automatically. Here are the links you can use:")
                         for link in st.session_state.video_links:
                             st.code(link)
         except Exception as e:
